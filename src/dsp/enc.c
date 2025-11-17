@@ -677,8 +677,8 @@ static int Disto16x16_C(const uint8_t* WEBP_RESTRICT const a,
 static const uint8_t kZigzag[16] = {0, 1,  4,  8,  5, 2,  3,  6,
                                     9, 12, 13, 10, 7, 11, 14, 15};
 
-// Simple quantization
-static int QuantizeBlock_C(int16_t in[16], int16_t out[16],
+  // Simple quantization
+static int QuantizeBlock_CPU(int16_t in[16], int16_t out[16],
                            const VP8Matrix* WEBP_RESTRICT const mtx) {
   int last = -1;
   int n;
@@ -702,6 +702,20 @@ static int QuantizeBlock_C(int16_t in[16], int16_t out[16],
     }
   }
   return (last >= 0);
+}
+
+// cuda 쪽에서 구현한 함수 선언 추가
+extern int QuantizeBlock_CUDA(int16_t in[16], int16_t out[16],
+                              const VP8Matrix* WEBP_RESTRICT const mtx);
+
+// Simple quantization
+static int QuantizeBlock_C(int16_t in[16], int16_t out[16],
+                           const VP8Matrix* WEBP_RESTRICT const mtx) {
+#ifdef WEBP_USE_CUDA_QUANT
+  return QuantizeBlock_CUDA(in, out, mtx);  // 이건 .cu 쪽에서 구현할 예정
+#else
+  return QuantizeBlock_CPU(in, out, mtx);
+#endif
 }
 
 static int Quantize2Blocks_C(int16_t in[32], int16_t out[32],

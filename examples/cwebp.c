@@ -31,6 +31,7 @@
 #include "sharpyuv/sharpyuv.h"
 #include "webp/encode.h"
 #include "webp/types.h"
+#include "cuda/dummy_kernel.cuh"
 
 #ifndef WEBP_DLL
 #ifdef __cplusplus
@@ -711,6 +712,12 @@ static const char* const kErrorMessages[VP8_ENC_ERROR_LAST] = {
 
 // Returns EXIT_SUCCESS on success, EXIT_FAILURE on failure.
 int main(int argc, const char* argv[]) {
+  #if 0
+  // CUDA 연동 예제
+  float test[4] = {0.0f, 1.0f, 2.0f, 3.0f};
+  DummyCudaAddOne(test, 4);
+  #endif
+
   int return_value = EXIT_FAILURE;
   const char *in_file = NULL, *out_file = NULL, *dump_file = NULL;
   FILE* out = NULL;

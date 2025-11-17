@@ -14,6 +14,9 @@ endif()
 
 project(WebP C)
 
+# CUDA 언어 활성화
+enable_language(CUDA)
+
 # Options for coder / decoder executables.
 if(BUILD_SHARED_LIBS)
   set(WEBP_LINK_STATIC_DEFAULT OFF)
@@ -280,6 +283,10 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/cmake/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/src/webp/config.h @ONLY)
 add_definitions(-DHAVE_CONFIG_H)
 
+# config.h가 있는 빌드 디렉토리를 전역 include path에 추가
+include_directories(${CMAKE_CURRENT_BINARY_DIR}
+                    ${CMAKE_CURRENT_BINARY_DIR}/src)
+
 # Set the version numbers.
 macro(set_version FILE TARGET_NAME NAME_IN_MAKEFILE)
   file(READ ${CMAKE_CURRENT_SOURCE_DIR}/${FILE} SOURCE_FILE)
@@ -414,6 +421,9 @@ target_include_directories(
                      ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_library(webpdsp OBJECT ${WEBP_DSP_COMMON_SRCS} ${WEBP_DSP_DEC_SRCS}
                            ${WEBP_DSP_ENC_SRCS})
+
+target_compile_definitions(webpdsp PRIVATE WEBP_USE_CUDA_QUANT) # CUDA 버전 경로를 타도록
+
 target_include_directories(webpdsp PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
                                            ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(webputils OBJECT ${WEBP_UTILS_COMMON_SRCS} ${WEBP_UTILS_DEC_SRCS}
@@ -561,7 +571,18 @@ endif()
 if(WEBP_BUILD_CWEBP)
   # cwebp
   parse_makefile_am(${CMAKE_CURRENT_SOURCE_DIR}/examples "CWEBP_SRCS" "cwebp")
-  add_executable(cwebp ${CWEBP_SRCS})
+   # cwebp 실행 파일에 CUDA 소스 추가
+  add_executable(cwebp
+    ${CWEBP_SRCS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/quant_cuda.cu
+  )
+
+  # 이 파일은 CUDA로 컴파일해야 한다고 CMake에 알려주기
+  set_source_files_properties(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/quant_cuda.cu
+    PROPERTIES LANGUAGE CUDA
+  )
+
   target_link_libraries(cwebp exampleutil imagedec webp)
   target_include_directories(cwebp PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src
                                            ${CMAKE_CURRENT_SOURCE_DIR})
