@@ -28,6 +28,11 @@
 #include "src/webp/encode.h"
 #include "src/webp/types.h"
 
+#ifdef USE_CUDA
+#include "src/cuda/yuv.cuh"
+#endif
+
+
 #if defined(WEBP_USE_THREAD) && !defined(_WIN32)
 #include <pthread.h>
 #endif
@@ -179,11 +184,21 @@ static int ImportYUVAFromRGBA(const uint8_t* r_ptr, const uint8_t* g_ptr,
     }
 
     if (rg == NULL) {
+      
+      #ifdef USE_CUDA
+      WebPImportYUVAFromRGBA_CUDA(r_ptr, g_ptr, b_ptr, a_ptr, step, rgb_stride,
+                                  has_alpha, width, height, tmp_rgb,
+                                  picture->y_stride, picture->uv_stride,
+                                  picture->a_stride, dst_y, dst_u, dst_v,
+                                  dst_a);
+      #else
       // Downsample Y/U/V planes, two rows at a time
       WebPImportYUVAFromRGBA(r_ptr, g_ptr, b_ptr, a_ptr, step, rgb_stride,
                              has_alpha, width, height, tmp_rgb,
                              picture->y_stride, picture->uv_stride,
-                             picture->a_stride, dst_y, dst_u, dst_v, dst_a);
+                             picture->a_stride, dst_y, dst_u, dst_v, dst_a); // ImportYUVAFromRGBA_C
+      #endif
+
       if (height & 1) {
         dst_y += (height - 1) * (ptrdiff_t)picture->y_stride;
         dst_u += (height >> 1) * (ptrdiff_t)picture->uv_stride;
@@ -197,7 +212,7 @@ static int ImportYUVAFromRGBA(const uint8_t* r_ptr, const uint8_t* g_ptr,
         }
         WebPImportYUVAFromRGBALastLine(r_ptr, g_ptr, b_ptr, a_ptr, step,
                                        has_alpha, width, tmp_rgb, dst_y, dst_u,
-                                       dst_v, dst_a);
+                                       dst_v, dst_a); // ImportYUVAFromRGBALastLine_C
       }
     } else {
       // Copy of WebPImportYUVAFromRGBA/WebPImportYUVAFromRGBALastLine,

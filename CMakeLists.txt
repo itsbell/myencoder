@@ -419,10 +419,16 @@ add_library(webpencode OBJECT ${WEBP_ENC_SRCS})
 target_include_directories(
   webpencode PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
                      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# CUDA YUV 변환 커널 추가
+list(APPEND WEBP_DSP_ENC_SRCS ${WEBP_SRC_DIR}/cuda/yuv.cu)
+set_source_files_properties(
+  ${WEBP_SRC_DIR}/cuda/yuv.cu
+  PROPERTIES LANGUAGE CUDA
+)
+
 add_library(webpdsp OBJECT ${WEBP_DSP_COMMON_SRCS} ${WEBP_DSP_DEC_SRCS}
                            ${WEBP_DSP_ENC_SRCS})
-
-target_compile_definitions(webpdsp PRIVATE WEBP_USE_CUDA_QUANT) # CUDA 버전 경로를 타도록
 
 target_include_directories(webpdsp PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
                                            ${CMAKE_CURRENT_SOURCE_DIR})

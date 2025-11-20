@@ -537,7 +537,7 @@ static void ImportYUVAFromRGBA_C(const uint8_t* r_ptr, const uint8_t* g_ptr,
   for (y = 0; y < (height >> 1); ++y) {
     int rows_have_alpha = has_alpha;
     if (is_rgb) {
-      WebPConvertRGBToY(r_ptr, dst_y, width, step);
+      WebPConvertRGBToY(r_ptr, dst_y, width, step); // ConvertRGBToY_C
       WebPConvertRGBToY(r_ptr + rgb_stride, dst_y + y_stride, width, step);
     } else {
       WebPConvertBGRToY(b_ptr, dst_y, width, step);
@@ -563,7 +563,7 @@ static void ImportYUVAFromRGBA_C(const uint8_t* r_ptr, const uint8_t* g_ptr,
                          width);
     }
     // Convert to U/V
-    WebPConvertRGBA32ToUV(tmp_rgb, dst_u, dst_v, uv_width);
+    WebPConvertRGBA32ToUV(tmp_rgb, dst_u, dst_v, uv_width); // WebPConvertRGBA32ToUV_C
     dst_u += uv_stride;
     dst_v += uv_stride;
     r_ptr += 2 * rgb_stride;
