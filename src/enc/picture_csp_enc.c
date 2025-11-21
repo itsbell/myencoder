@@ -193,6 +193,7 @@ static int ImportYUVAFromRGBA(const uint8_t* r_ptr, const uint8_t* g_ptr,
                                   dst_a);
       #else
       // Downsample Y/U/V planes, two rows at a time
+
       WebPImportYUVAFromRGBA(r_ptr, g_ptr, b_ptr, a_ptr, step, rgb_stride,
                              has_alpha, width, height, tmp_rgb,
                              picture->y_stride, picture->uv_stride,

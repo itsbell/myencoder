@@ -23,6 +23,10 @@
 #include "src/enc/vp8i_enc.h"
 #include "src/webp/types.h"
 
+#ifdef USE_CUDA
+#include "src/cuda/Intra16.cuh"
+#endif
+
 #define DO_TRELLIS_I4 1
 #define DO_TRELLIS_I16 1  // not a huge gain, but ok at low bitrate.
 #define DO_TRELLIS_UV 0   // disable trellis for UV. Risky. Not worth.
@@ -566,7 +570,7 @@ static WEBP_INLINE score_t RDScoreTrellis(int lambda, score_t rate,
 // Coefficient type.
 enum { TYPE_I16_AC = 0, TYPE_I16_DC = 1, TYPE_CHROMA_A = 2, TYPE_I4_AC = 3 };
 
-static int TrellisQuantizeBlock(const VP8Encoder* WEBP_RESTRICT const enc,
+int TrellisQuantizeBlock(const VP8Encoder* WEBP_RESTRICT const enc,
                                 int16_t in[16], int16_t out[16], int ctx0,
                                 int coeff_type,
                                 const VP8Matrix* WEBP_RESTRICT const mtx,
@@ -754,6 +758,42 @@ static int TrellisQuantizeBlock(const VP8Encoder* WEBP_RESTRICT const enc,
 static int ReconstructIntra16(VP8EncIterator* WEBP_RESTRICT const it,
                               VP8ModeScore* WEBP_RESTRICT const rd,
                               uint8_t* WEBP_RESTRICT const yuv_out, int mode) {
+#ifdef USE_CUDA
+  
+  VP8Intra16Job job;
+  const VP8Encoder* const enc = it->enc;
+  const VP8SegmentInfo* const dqm = &enc->dqm[it->mb->segment];
+
+  job.enc = enc;
+
+  job.src = it->yuv_in + Y_OFF_ENC;
+  job.ref = it->yuv_p + VP8I16ModeOffsets[mode];
+  job.src_stride = BPS;
+  job.ref_stride = BPS;
+
+  job.y1 = &dqm->y1;
+  job.y2 = &dqm->y2;
+
+  job.do_trellis = (DO_TRELLIS_I16 && it->do_trellis);
+  if (job.do_trellis) {
+    VP8IteratorNzToBytes(it);
+    for (int i = 0; i < 4; ++i)
+    {
+      job.top_nz[i] = it->top_nz[i];
+      job.left_nz[i] = it->left_nz[i];
+    }
+  }
+  job.lambda_trellis_i16 = dqm->lambda_trellis_i16;
+
+  job.y_dc_levels = rd->y_dc_levels;
+  job.y_ac_levels = &rd->y_ac_levels[0][0];
+  job.dst = yuv_out;
+
+  const int nz = ReconstructIntra16_CUDA(&job, 1);
+
+  return nz;
+
+#else
   const VP8Encoder* const enc = it->enc;
   const uint8_t* const ref = it->yuv_p + VP8I16ModeOffsets[mode];
   const uint8_t* const src = it->yuv_in + Y_OFF_ENC;
@@ -800,6 +840,7 @@ static int ReconstructIntra16(VP8EncIterator* WEBP_RESTRICT const it,
   }
 
   return nz;
+#endif
 }
 
 static int ReconstructIntra4(VP8EncIterator* WEBP_RESTRICT const it,
