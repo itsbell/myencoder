@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc. All Rights Reserved.
+﻿// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Use of this source code is governed by a BSD-style license
 // that can be found in the COPYING file in the root of the source
@@ -836,7 +836,7 @@ int VP8EncTokenLoop(VP8Encoder* const enc) {
     VP8TBufferClear(&enc->tokens);
     do {
       VP8ModeScore info;
-      VP8IteratorImport(&it, NULL);
+      VP8IteratorImport(&it, NULL); // 현재 매크로블록 인코딩을 시작하기 위해 원본 데이터 + 주변 컨텍스트를 Iterator에 가져오는 단계(아직 변환/양자화 같은 건 안 하고, 그냥 데이터만 준비)
       if (--cnt < 0) {
         FinalizeTokenProbas(proba);
         VP8CalculateLevelCosts(proba);  // refresh cost tables for rd-opt

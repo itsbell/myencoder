@@ -43,7 +43,8 @@ __global__ void WebPImportYUVAFromRGBAKernel(
 
   const int nUVWidth = (nWidth + 1) >> 1;
 
-  if (nUVX >= nUVWidth || nUVY >= nPairRows) return;
+  if (nUVX >= nUVWidth || nUVY >= nPairRows)
+      return;
 
   const int x0 = 2 * nUVX;
   const int y0 = 2 * nUVY;
@@ -158,8 +159,7 @@ void WebPImportYUVAFromRGBA_CUDA(const uint8_t* r_ptr, const uint8_t* g_ptr,
 
   // 3. 커널 런치
   const dim3 block(16, 16);
-  const dim3 grid((nUVWidth + block.x - 1) / block.x,
-                  (nUVHeight + block.y - 1) / block.y);
+  const dim3 grid((nUVWidth + block.x - 1) / block.x, (nUVHeight + block.y - 1) / block.y);
 
   WebPImportYUVAFromRGBAKernel<<<grid, block>>>(pR, pG, pB, nStep, nRGBStride,
                                                 nWidth, nUVHeight, pY, pU, pV,
@@ -169,12 +169,12 @@ void WebPImportYUVAFromRGBA_CUDA(const uint8_t* r_ptr, const uint8_t* g_ptr,
   // 4. GPU -> CPU 메모리 복사
   for (int y = 0; y < nRows; ++y)
   {
-    memcpy(dst_y + (ptrdiff_t)y * y_stride, pY + (size_t)y * nWidth, (size_t)nWidth);
+    cudaMemcpy(dst_y + (ptrdiff_t)y * y_stride, pY + (size_t)y * nWidth, (size_t)nWidth, cudaMemcpyDeviceToHost);
   }
   for (int row = 0; row < nUVHeight; ++row)
   {
-    memcpy(dst_u + (ptrdiff_t)row * uv_stride, pU + (size_t)row * nUVWidth, (size_t)nUVWidth);
-    memcpy(dst_v + (ptrdiff_t)row * uv_stride, pV + (size_t)row * nUVWidth, (size_t)nUVWidth);
+    cudaMemcpy(dst_u + (ptrdiff_t)row * uv_stride, pU + (size_t)row * nUVWidth, (size_t)nUVWidth, cudaMemcpyDeviceToHost);
+    cudaMemcpy(dst_v + (ptrdiff_t)row * uv_stride, pV + (size_t)row * nUVWidth, (size_t)nUVWidth, cudaMemcpyDeviceToHost);
   }
 
   // 5. GPU 메모리 할당 해제
